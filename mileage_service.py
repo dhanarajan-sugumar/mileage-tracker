@@ -39,9 +39,13 @@ with closing(_connect()) as c:
 # ―― core business logic ――――――――――――――――――――――――――――――――――――――――――
 def calc_metrics(start, end, litres, price):
     distance = end - start
+    if distance <= 0:  # Validation to prevent zero or negative distance
+        raise ValueError("End odometer must be greater than start odometer.")
+
     mileage = round(distance / litres, 2)
     total_cost = round(litres * price, 2)
     cost_per_km = round(total_cost / distance, 2)
+
     return distance, mileage, total_cost, cost_per_km
 
 def save_log(start, end, litres, price):
@@ -67,3 +71,11 @@ def fetch_log():
     with closing(_connect()) as c:
         cur = c.execute("SELECT * FROM mileage_log ORDER BY id DESC")
         return cur.fetchall()
+    
+# NEW: remove one or many rows by primary‑key id
+def delete_log(ids: list[int]) -> None:
+    if not ids:
+        return
+    with closing(_connect()) as c:
+        c.executemany("DELETE FROM mileage_log WHERE id = ?", [(i,) for i in ids])
+        c.commit()
